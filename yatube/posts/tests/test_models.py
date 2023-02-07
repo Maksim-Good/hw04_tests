@@ -18,11 +18,11 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый пост',
+            text='Тестовый пост длиннее 15 символов',
         )
 
     def test_models_have_correct_object_names(self):
-        self.assertEqual(PostModelTest.post.text, str(PostModelTest.post))
+        self.assertEqual(PostModelTest.post.text[:15], str(PostModelTest.post))
         group = PostModelTest.group
         self.assertEqual(group.title, str(self.group))
 

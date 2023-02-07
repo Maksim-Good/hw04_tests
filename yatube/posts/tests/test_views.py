@@ -165,3 +165,8 @@ class PostPagesTests(TestCase):
         )
         new_text = response.context.get('page_obj')[0].text
         self.assertEqual(new_text, 'Новый пост')
+        response = self.client.get(
+            reverse('posts:group_list', kwargs={'slug': 'test_slug'})
+        )
+        new_text = response.context.get('page_obj')[0].text
+        self.assertNotEqual(new_text, 'Новый пост')
