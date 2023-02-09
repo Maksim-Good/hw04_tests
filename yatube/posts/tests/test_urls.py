@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
+from http import HTTPStatus
 
 from posts.models import Group, Post
 
@@ -16,10 +17,23 @@ class PostURLTests(TestCase):
             slug='test_slug',
             description='Тестовое описание'
         )
-        Post.objects.create(
+        cls.post = Post.objects.create(
             author=cls.author,
             text='Тестовый пост',
             group=cls.group
+        )
+        cls.post_url = f'/posts/{cls.post.id}/'
+        cls.public_urls = (
+            ('/', 'posts/index.html'),
+            (f'/group/{cls.group.slug}/', 'posts/group_list.html'),
+            (f'/profile/{cls.author.username}/', 'posts/profile.html'),
+            (cls.post_url, 'posts/post_detail.html'),
+        )
+        cls.authorized_urls = (
+            ('/create/', 'posts/create_post.html'),
+        )
+        cls.private_urls = (
+            (f'{cls.post_url}edit/', 'posts/create_post.html'),
         )
 
     def setUp(self):
@@ -31,67 +45,61 @@ class PostURLTests(TestCase):
         self.authorized_author_client.force_login(self.author)
 
     def test_urls_uses_correct_template_for_authorized_author(self):
-        templates_url_names = {
-            '/': 'posts/index.html',
-            '/group/test_slug/': 'posts/group_list.html',
-            '/profile/Test_name_author/': 'posts/profile.html',
-            '/posts/1/': 'posts/post_detail.html',
-            '/create/': 'posts/create_post.html',
-            '/posts/1/edit/': 'posts/create_post.html'
-        }
-        for address, template in templates_url_names.items():
+        self.all_urls = (
+            self.public_urls
+            + self.authorized_urls
+            + self.private_urls
+        )
+        for url in self.all_urls:
+            address, template = url
             with self.subTest(address=address):
                 response = self.authorized_author_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_template_for_authorized_user(self):
-        templates_url_names = {
-            '/': 'posts/index.html',
-            '/group/test_slug/': 'posts/group_list.html',
-            '/profile/Test_name_author/': 'posts/profile.html',
-            '/posts/1/': 'posts/post_detail.html',
-            '/create/': 'posts/create_post.html',
-        }
-        for address, template in templates_url_names.items():
+        self.all_urls = (
+            self.public_urls
+            + self.authorized_urls
+        )
+        for url in self.all_urls:
+            address, template = url
             with self.subTest(address=address):
-                response = self.authorized_client.get(address)
+                response = self.authorized_author_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_template_for_guest_client(self):
-        templates_url_names = {
-            '/': 'posts/index.html',
-            '/group/test_slug/': 'posts/group_list.html',
-            '/profile/Test_name_author/': 'posts/profile.html',
-            '/posts/1/': 'posts/post_detail.html',
-        }
-        for address, template in templates_url_names.items():
+        for url in self.public_urls:
+            address, template = url
             with self.subTest(address=address):
-                response = self.guest_client.get(address)
+                response = self.authorized_author_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_edit_redirect_for_usernotauthor_on_detail(self):
-        response = self.authorized_client.get('/posts/1/edit/', follow=True)
-        self.assertRedirects(
-            response, '/posts/1/'
+        response = self.authorized_client.get(
+            self.private_urls[0][0], follow=True
         )
+        self.assertRedirects(response, self.post_url)
 
     def test_create_and_edit_redirect_anonymous_on_login(self):
-        response = self.guest_client.get('/create/', follow=True)
+        response = self.guest_client.get(
+            self.authorized_urls[0][0], follow=True
+        )
         self.assertRedirects(
             response, '/auth/login/?next=/create/'
         )
-        response = self.guest_client.get('/posts/1/edit/', follow=True)
+        response = self.guest_client.get(self.private_urls[0][0], follow=True)
         self.assertRedirects(
             response, '/auth/login/?next=/posts/1/edit/'
         )
 
     def test_access_to_nonexistent_page_for_all_clients(self):
-        clients = {
-            self.guest_client: 404,
-            self.authorized_client: 404,
-            self.authorized_author_client: 404
-        }
-        for client, error in clients.items():
-            self.client = client
-            response = self.client.get('/nonexistent_page/')
-            self.assertEqual(response.status_code, error)
+        clients = (
+            self.guest_client,
+            self.authorized_client,
+            self.authorized_author_client
+        )
+        for client in clients:
+            with self.subTest(client=client):
+                self.my_client = client
+                response = self.my_client.get('/nonexistent_page/')
+                self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

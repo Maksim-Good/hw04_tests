@@ -20,54 +20,63 @@ class PostModelTest(TestCase):
             author=cls.user,
             text='Тестовый пост длиннее 15 символов',
         )
+        cls.post_spec = [
+            {
+                'field_name': 'text',
+                'verbose_name': 'Текст',
+                'help_text': 'Здесь нужно ввести основной текст поста.'
+            },
+            {
+                'field_name': 'author',
+                'verbose_name': 'Автор',
+                'help_text': 'Здесь нужно ввести имя автора поста.'
+            },
+            {
+                'field_name': 'group',
+                'verbose_name': 'Группа',
+                'help_text': 'Здесь можно ввести имя группы.'
+            }
+        ]
+        cls.group_spec = [
+            {
+                'field_name': 'title',
+                'verbose_name': 'Название группы',
+                'help_text': 'Здесь нужно ввести имя группы.'
+            },
+            {
+                'field_name': 'slug',
+                'verbose_name': 'Тэг',
+                'help_text': 'Здесь нужно задать Тэг (уникальное имя).'
+            },
+            {
+                'field_name': 'description',
+                'verbose_name': 'Описание группы',
+                'help_text': 'Здесь должно быть описание группы.'
+            }
+        ]
+
+    def fields(self, model, model_spec):
+        for i in model_spec:
+            with self.subTest(i=i):
+                field = i['field_name']
+                verbose = i['verbose_name']
+                help_text = i['help_text']
+                self.assertEqual(
+                    model._meta.get_field(field).verbose_name, verbose
+                )
+                self.assertEqual(
+                    model._meta.get_field(field).help_text, help_text
+                )
 
     def test_models_have_correct_object_names(self):
         self.assertEqual(PostModelTest.post.text[:15], str(PostModelTest.post))
         group = PostModelTest.group
         self.assertEqual(group.title, str(self.group))
 
-    def test_verbose_name(self):
+    def test_post_verbose_name_and_help_text(self):
         post = PostModelTest.post
-        field_verboses = {
-            'text': 'Текст',
-            'pub_date': 'Дата публикации',
-            'author': 'Автор',
-            'group': 'Группа',
-        }
-        for field, expected_value in field_verboses.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    post._meta.get_field(field).verbose_name, expected_value)
-        group = PostModelTest.group
-        field_verboses = {
-            'title': 'Имя группы',
-            'slug': 'Тэг',
-            'description': 'Описание',
-        }
-        for field, expected_value in field_verboses.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    group._meta.get_field(field).verbose_name, expected_value)
+        self.fields(post, self.post_spec)
 
-    def test_help_text(self):
-        """help_text в полях совпадает с ожидаемым."""
-        post = PostModelTest.post
-        field_help_texts = {
-            'text': 'Здесь нужно ввести основной текст поста.',
-            'author': 'Здесь нужно ввести имя автора поста.',
-            'group': 'Здесь можно ввести имя группы.',
-        }
-        for field, expected_value in field_help_texts.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    post._meta.get_field(field).help_text, expected_value)
+    def test_post_verbose_name_and_help_text(self):
         group = PostModelTest.group
-        field_help_texts = {
-            'title': 'Здесь нужно ввести имя группы.',
-            'slug': 'Здесь нужно задать Тэг (уникальное имя).',
-            'description': 'Здесь должно быть описание группы.'
-        }
-        for field, expected_value in field_help_texts.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    group._meta.get_field(field).help_text, expected_value)
+        self.fields(group, self.group_spec)

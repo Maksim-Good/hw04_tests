@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from posts.forms import PostForm
 from posts.models import Group, Post
+from http import HTTPStatus
 
 User = get_user_model()
 
@@ -46,10 +47,10 @@ class PostFormTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), tasks_count + 1)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст2',
+                text=form_data['text'],
             ).exists()
         )
 
@@ -69,9 +70,9 @@ class PostFormTests(TestCase):
             )
         )
         self.assertEqual(Post.objects.count(), tasks_count)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTrue(
             Post.objects.filter(
-                text='Измененный текст',
+                text=form_data['text'],
             ).exists()
         )

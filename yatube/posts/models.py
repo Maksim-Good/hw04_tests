@@ -42,7 +42,7 @@ class Post(models.Model):
 class Group(models.Model):
     title = models.CharField(
         max_length=200,
-        verbose_name='Имя группы',
+        verbose_name='Название группы',
         help_text='Здесь нужно ввести имя группы.',
     )
     slug = models.SlugField(
@@ -52,7 +52,7 @@ class Group(models.Model):
         help_text='Здесь нужно задать Тэг (уникальное имя).',
     )
     description = models.TextField(
-        verbose_name='Описание',
+        verbose_name='Описание группы',
         help_text='Здесь должно быть описание группы.'
     )
 
